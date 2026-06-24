@@ -1,0 +1,23 @@
+# Dependências
+node_modules/
+
+# Credenciais — NUNCA publicar (contém chaves privadas)
+*firebase-adminsdk*.json
+*adminsdk*.json
+firebase-chave.json
+*-firebase-adminsdk-*.json
+serviceAccount*.json
+*.pem
+.env
+.env.*
+secrets/
+credentials/
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.vscode/
+.idea/

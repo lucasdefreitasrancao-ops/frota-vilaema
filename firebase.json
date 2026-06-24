@@ -1,0 +1,29 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "package.json",
+      "package-lock.json",
+      "README.md",
+      "core-bundle.js",
+      "js/storage-api.js",
+      "js/app.js",
+      "*firebase-adminsdk*.json",
+      "firebase-chave.json"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css|html|json)",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      }
+    ]
+  }
+}

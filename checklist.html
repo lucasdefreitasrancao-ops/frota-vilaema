@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="theme-color" content="#071A35"/>
+<title>Checklist de Vistoria — Vila Ema</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0F2F5;color:#1e293b;min-height:100vh}
+.header{background:#071A35;color:#fff;padding:16px 20px;position:sticky;top:0;z-index:100}
+.header h1{font-size:1rem;font-weight:700;letter-spacing:.01em}
+.header p{font-size:.75rem;color:#94a3b8;margin-top:2px}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:18px;margin-bottom:14px}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:700}
+.b-g{background:#dcfce7;color:#16a34a}
+.b-r{background:#fee2e2;color:#dc2626}
+.b-y{background:#fef3c7;color:#b45309}
+.b-b{background:#dbeafe;color:#1d4ed8}
+.inp{width:100%;padding:10px 13px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:.9rem;outline:none;transition:border-color .18s;background:#fff;color:#1e293b}
+.inp:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+label.lbl{font-size:.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px}
+.pbar-wrap{background:#e2e8f0;border-radius:999px;height:10px;overflow:hidden;margin-top:8px}
+.pbar-fill{height:100%;border-radius:999px;transition:width .6s ease}
+.item-row{background:#f8fafc;border-radius:12px;padding:14px 16px;margin-bottom:10px;border:2px solid transparent;transition:border-color .15s}
+.item-row.ok{border-color:#22c55e;background:#f0fdf4}
+.item-row.atencao{border-color:#f59e0b;background:#fffbeb}
+.item-row.critico{border-color:#ef4444;background:#fef2f2}
+.item-row h4{font-size:.88rem;font-weight:700;color:#1e293b;margin-bottom:2px}
+.item-row p{font-size:.75rem;color:#64748b;margin-bottom:10px}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+.btn-item{flex:1;min-width:70px;padding:8px 6px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;font-size:.78rem;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;color:#64748b}
+.btn-item.selected-ok{background:#16a34a;border-color:#16a34a;color:#fff}
+.btn-item.selected-atencao{background:#d97706;border-color:#d97706;color:#fff}
+.btn-item.selected-critico{background:#dc2626;border-color:#dc2626;color:#fff}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:12px;font-weight:700;font-size:1rem;cursor:pointer;border:none;transition:all .18s}
+.btn-primary{background:#2563eb;color:#fff}
+.btn-primary:hover:not(:disabled){background:#1d4ed8}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.spinner{width:22px;height:22px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.success{display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:60vh}
+.success.show{display:flex}
+.success .icon{font-size:4rem;animation:bounce .6s ease}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:12px}
+.loading-dot{width:10px;height:10px;border-radius:50%;background:#2563eb;animation:dot .8s ease-in-out infinite}
+.loading-dot:nth-child(2){animation-delay:.2s}
+.loading-dot:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+.error-box{background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:18px;text-align:center;margin:20px 0}
+.error-box p{color:#dc2626;font-weight:600;font-size:.9rem}
+.error-box small{color:#ef4444;font-size:.75rem}
+.km-info{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:#64748b;margin-top:6px}
+</style>
+<script src="./core-bundle.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>🚛 Vistoria Diária</h1>
+  <p id="hdr-sub">Vila Ema — Controle de Frota</p>
+</div>
+
+<!-- LOADING -->
+<div class="container" id="loading-view">
+  <div class="loading-screen">
+    <div style="display:flex;gap:8px">
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+    </div>
+    <p style="color:#64748b;font-size:.9rem">Carregando dados do veículo…</p>
+  </div>
+</div>
+
+<!-- ERRO -->
+<div class="container" id="error-view" style="display:none">
+  <div class="error-box" style="margin-top:40px">
+    <div style="font-size:2.5rem;margin-bottom:8px">⚠️</div>
+    <p id="error-msg">Erro ao carregar dados</p>
+    <small id="error-detail"></small>
+    <br/>
+    <button onclick="window.location.reload()" style="margin-top:14px;padding:10px 20px;background:#2563eb;color:#fff;border:none;border-radius:9px;font-weight:700;cursor:pointer">
+      🔄 Tentar novamente
+    </button>
+  </div>
+</div>
+
+<!-- FORMULÁRIO -->
+<div class="container" id="form-view" style="display:none">
+
+  <!-- Placa + Info -->
+  <div class="card" id="truck-info-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div style="font-size:1.4rem;font-weight:900;color:#071A35;letter-spacing:.04em" id="info-placa">—</div>
+        <div style="font-size:.85rem;color:#64748b;margin-top:2px" id="info-modelo">—</div>
+      </div>
+      <div id="info-status-badge"></div>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>
+        <div style="font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em">Tipo</div>
+        <div style="font-size:.88rem;font-weight:600;color:#334155;margin-top:2px" id="info-tipo">—</div>
+      </div>
+      <div>
+        <div style="font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em">Motorista</div>
+        <div style="font-size:.88rem;font-weight:600;color:#334155;margin-top:2px" id="info-motorista">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KM -->
+  <div class="card">
+    <label class="lbl">KM Atual *</label>
+    <input type="number" class="inp" id="km-input" placeholder="Digite o KM atual" min="0" oninput="updateKmBar()"/>
+    <div class="km-info">
+      <span id="km-atual-info">KM atual registrado: —</span>
+      <span id="km-restante-info" style="font-weight:700"></span>
+    </div>
+    <div class="pbar-wrap">
+      <div class="pbar-fill" id="km-bar" style="width:0%;background:#22c55e"></div>
+    </div>
+  </div>
+
+  <!-- Motorista -->
+  <div class="card">
+    <label class="lbl">Nome do Motorista *</label>
+    <input type="text" class="inp" id="motorista-input" placeholder="Seu nome completo"/>
+  </div>
+
+  <!-- Itens de Vistoria -->
+  <div class="card">
+    <h3 style="font-size:.9rem;font-weight:700;color:#071A35;margin-bottom:4px">Itens de Vistoria</h3>
+    <p style="font-size:.75rem;color:#64748b;margin-bottom:14px">Avalie cada item — selecione uma opção para cada</p>
+    <div id="items-container"></div>
+  </div>
+
+  <!-- Observações -->
+  <div class="card">
+    <label class="lbl">Observações gerais</label>
+    <textarea class="inp" id="obs-input" rows="3" placeholder="Descreva avarias, problemas ou observações…"></textarea>
+  </div>
+
+  <!-- Botão Enviar -->
+  <div style="margin-bottom:32px">
+    <button class="btn btn-primary" id="submit-btn" onclick="submitChecklist()">
+      ✅ Finalizar Vistoria
+    </button>
+    <p style="font-size:.72rem;color:#94a3b8;text-align:center;margin-top:10px">
+      Ao enviar, o KM será atualizado no sistema
+    </p>
+  </div>
+
+</div>
+
+<!-- SUCESSO -->
+<div class="container" id="success-view" style="display:none">
+  <div class="success show" style="padding-top:40px">
+    <div class="icon">✅</div>
+    <h2 style="font-size:1.3rem;font-weight:900;color:#16a34a;margin-top:12px">Vistoria Enviada!</h2>
+    <p style="color:#64748b;margin-top:8px;font-size:.9rem">Checklist registrado com sucesso no sistema.</p>
+    <div id="success-detail" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:16px;margin-top:20px;text-align:left;width:100%"></div>
+    <button onclick="window.close()" style="margin-top:24px;padding:12px 28px;background:#2563eb;color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;font-size:.95rem">
+      Fechar
+    </button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ─── API — Genspark Tables REST ───────
+// URLs relativas funcionam no editor E no site publicado
+const api = {
+  async req(method, path, body) {
+    const opts = { method, headers: {} };
+    if (body !== undefined) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+    let res;
+    try {
+      console.log('[API]', method, path);
+      res = await fetch(path, opts);
+    }
+    catch(e) { throw new Error('Sem conexão: ' + e.message); }
+    if (res.status === 204) return null;
+    let data = null;
+    try { data = await res.json(); } catch {}
+    if (!res.ok) {
+      const detail = data ? JSON.stringify(data).slice(0, 300) : ('HTTP ' + res.status);
+      console.error('[API ERROR]', method, path, res.status, detail);
+      throw new Error('HTTP ' + res.status + ' — ' + detail);
+    }
+    return data;
+  },
+  get(table, id)       { return this.req('GET',   'tables/' + table + '/' + id); },
+  post(table, body)    { return this.req('POST',  'tables/' + table, body); },
+  patch(table, id, b)  { return this.req('PATCH', 'tables/' + table + '/' + id, b); },
+};
+
+// ─── Bootstrap de Schemas (ambiente publicado) ────────────────────────
+// Garante que as tabelas existam no contexto do ambiente publicado.
+const _CHECKLIST_SCHEMAS = [
+  { name: 'caminhoes',    numFields: ['ano','km_atual','eixos','pneus'],
+    strFields: ['placa','tipo','marca','modelo','motorista','renavam','chassi','status','vencimento_ipva','vencimento_seguro','created_at'] },
+  { name: 'checklists',  numFields: ['km_atual'],
+    strFields: ['caminhao_id','placa','motorista','freios','pneus','luzes','oleo','agua','documentos','observacoes','status_geral','data_checklist','created_at'] }
+];
+let _clSchemasReady = false;
+async function _clBootstrap(s) {
+  const row = {};
+  s.numFields.forEach(f => row[f] = 0);
+  s.strFields.forEach(f => row[f] = '');
+  row.created_at = new Date().toISOString().slice(0,10);
+  try {
+    const r = await fetch('tables/' + s.name, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(row)
+    });
+    if (r.ok || r.status === 201) {
+      const d = await r.json().catch(() => null);
+      if (d && d.id) await fetch('tables/' + s.name + '/' + d.id, { method: 'DELETE' });
+      console.log('[bootstrap]', s.name, '✅');
+      return true;
+    }
+    console.warn('[bootstrap]', s.name, '❌', r.status);
+    return false;
+  } catch(e) { console.warn('[bootstrap]', s.name, '❌', e.message); return false; }
+}
+async function ensureSchemasChecklist() {
+  if (_clSchemasReady) return;
+  try {
+    const r = await fetch('tables/caminhoes?limit=1');
+    if (r.ok) { _clSchemasReady = true; return; }
+    const d = await r.json().catch(() => ({}));
+    const err = JSON.stringify(d);
+    if (err.includes('schema') || err.includes('table') || r.status === 500) {
+      console.warn('[ensureSchemas] Bootstrap iniciando…');
+      await Promise.allSettled(_CHECKLIST_SCHEMAS.map(s => _clBootstrap(s)));
+      console.log('[ensureSchemas] Bootstrap concluído');
+    }
+  } catch(e) { console.warn('[ensureSchemas] Erro:', e.message); }
+  _clSchemasReady = true;
+}
+
+// ─── URL Params ───────────────────────
+const params = new URLSearchParams(window.location.search);
+const PLACA  = params.get('placa') || '';
+const CAM_ID = params.get('cam')   || '';
+
+// ─── Estado do Caminhão ───────────────
+let caminhao = null;
+
+// ─── Itens de vistoria ─────────────────────────────
+// Schema checklists: freios, pneus, luzes, oleo, agua, documentos
+// + campos extras armazenados em observacoes (JSON)
+const ITENS = [
+  { id: 'freios',     icon: '🛑', label: 'Sistema de Freios',      desc: 'Freio de serviço, freio de mão e freio motor' },
+  { id: 'pneus',      icon: '⚫', label: 'Pneus e Estepe',         desc: 'Calibragem, desgaste, valetas e estepe' },
+  { id: 'luzes',      icon: '💡', label: 'Luzes e Sinalização',     desc: 'Faróis, lanternas, setas e luzes de freio' },
+  { id: 'oleo',       icon: '🔧', label: 'Nível de Óleo',          desc: 'Óleo do motor, câmbio e direção hidráulica' },
+  { id: 'agua',       icon: '💧', label: 'Nível de Água',          desc: 'Reservatório de arrefecimento e limpador' },
+  { id: 'documentos', icon: '📄', label: 'Documentos e Licenças',   desc: 'CNH, CRLV, tacógrafo e certificados' },
+  { id: 'espelhos',   icon: '🪞', label: 'Espelhos e Vidros',      desc: 'Retrovisores, vidros e para-brisa' },
+  { id: 'vazamentos', icon: '🔴', label: 'Vazamentos',             desc: 'Óleo, água, combustível e fluidos' },
+  { id: 'motor',      icon: '⚙️', label: 'Motor e Painel',         desc: 'Luzes de alerta, temperatura e pressão' },
+  { id: 'carroceria', icon: '🚛', label: 'Carroceria e Baú',       desc: 'Travas, fechos, piso e estrutura' },
+];
+
+// Estado dos itens (mapeados por id)
+const respostas = {};
+
+// ─── Views ─────────────────────────────
+function show(id) {
+  ['loading-view', 'error-view', 'form-view', 'success-view'].forEach(v => {
+    document.getElementById(v).style.display = v === id ? 'block' : 'none';
+  });
+}
+
+function showError(msg, detail) {
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('error-detail').textContent = detail || '';
+  show('error-view');
+}
+
+// ─── Renderizar itens ──────────────────
+function renderItems() {
+  const container = document.getElementById('items-container');
+  container.innerHTML = '';
+
+  ITENS.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.id = 'row-' + item.id;
+
+    row.innerHTML = `
+      <h4>${item.icon} ${item.label}</h4>
+      <p>${item.desc}</p>
+      <div class="btn-group">
+        <button class="btn-item" id="btn-${item.id}-ok"       onclick="setItem('${item.id}','ok')">✅ OK</button>
+        <button class="btn-item" id="btn-${item.id}-atencao"  onclick="setItem('${item.id}','atencao')">⚠️ Atenção</button>
+        <button class="btn-item" id="btn-${item.id}-critico"  onclick="setItem('${item.id}','critico')">🔴 Crítico</button>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function setItem(id, val) {
+  respostas[id] = val;
+  // Visual
+  const row = document.getElementById('row-' + id);
+  row.className = 'item-row ' + val;
+  ['ok','atencao','critico'].forEach(v => {
+    const btn = document.getElementById('btn-' + id + '-' + v);
+    btn.className = 'btn-item' + (v === val ? ' selected-' + v : '');
+  });
+}
+
+// ─── KM bar ───────────────────────────
+function updateKmBar() {
+  if (!caminhao) return;
+  const kmAtual   = Number(caminhao.km_atual) || 0;
+  const kmInput   = Number(document.getElementById('km-input').value) || 0;
+  const bar       = document.getElementById('km-bar');
+  const infoEl    = document.getElementById('km-restante-info');
+
+  if (kmAtual === 0 || kmInput === 0) { bar.style.width = '0%'; infoEl.textContent = ''; return; }
+
+  const pct = Math.min(100, Math.round((kmInput / kmAtual) * 100));
+  bar.style.width = pct + '%';
+
+  if (pct < 80) { bar.style.background = '#22c55e'; infoEl.style.color = '#16a34a'; infoEl.textContent = 'Normal'; }
+  else if (pct < 100) { bar.style.background = '#f59e0b'; infoEl.style.color = '#b45309'; infoEl.textContent = 'Próximo do limite'; }
+  else { bar.style.background = '#ef4444'; infoEl.style.color = '#dc2626'; infoEl.textContent = 'ACIMA DO REGISTRADO'; }
+}
+
+// ─── Status badge ──────────────────────
+function statusBadge(v) {
+  const M = { 'Ativo': 'b-g', 'Manutenção': 'b-y', 'Inativo': 'b-r' };
+  return `<span class="badge ${M[v]||'b-b'}">${v||'—'}</span>`;
+}
+
+// ─── Carregar dados do caminhão ────────
+async function init() {
+  show('loading-view');
+  await ensureSchemasChecklist(); // ← garante schemas no ambiente publicado
+
+  if (!PLACA || !CAM_ID) {
+    showError('URL inválida', 'Parâmetros placa e cam são obrigatórios. Use o QR Code do sistema principal.');
+    return;
+  }
+
+  document.getElementById('hdr-sub').textContent = 'Vistoria: ' + PLACA;
+
+  try {
+    console.log('[init] Buscando caminhão id:', CAM_ID);
+    caminhao = await api.get('caminhoes', CAM_ID);
+    console.log('[init] Caminhão carregado:', JSON.stringify(caminhao));
+
+    if (!caminhao || !caminhao.id) {
+      showError('Caminhão não encontrado', 'ID: ' + CAM_ID);
+      return;
+    }
+
+    // Preenche info card
+    document.getElementById('info-placa').textContent     = caminhao.placa || PLACA;
+    document.getElementById('info-modelo').textContent    = (caminhao.marca||'') + (caminhao.modelo?' ' + caminhao.modelo:'');
+    document.getElementById('info-tipo').textContent      = caminhao.tipo || '—';
+    document.getElementById('info-motorista').textContent = caminhao.motorista || '—';
+    document.getElementById('info-status-badge').innerHTML = statusBadge(caminhao.status);
+    document.getElementById('km-atual-info').textContent  = 'KM atual registrado: ' + (caminhao.km_atual ? Number(caminhao.km_atual).toLocaleString('pt-BR') + ' km' : '—');
+
+    // Pré-preenche motorista
+    if (caminhao.motorista) {
+      document.getElementById('motorista-input').value = caminhao.motorista;
+    }
+
+    renderItems();
+    show('form-view');
+
+  } catch(err) {
+    console.error('[init] Erro:', err.message);
+    showError('Erro ao carregar dados do veículo', err.message);
+  }
+}
+
+// ─── Submit ────────────────────────────
+async function submitChecklist() {
+  const kmVal    = Number(document.getElementById('km-input').value);
+  const motorista = document.getElementById('motorista-input').value.trim();
+  const obs       = document.getElementById('obs-input').value.trim();
+
+  // Validações
+  if (!kmVal || kmVal <= 0) {
+    alert('⚠️ Informe o KM atual do veículo.');
+    document.getElementById('km-input').focus();
+    return;
+  }
+  if (!motorista) {
+    alert('⚠️ Informe o nome do motorista.');
+    document.getElementById('motorista-input').focus();
+    return;
+  }
+
+  const totalItens = ITENS.length;
+  const respondidos = Object.keys(respostas).length;
+  if (respondidos < 6) {
+    alert('⚠️ Avalie pelo menos 6 dos ' + totalItens + ' itens de vistoria. Avaliados: ' + respondidos);
+    return;
+  }
+
+  // Calcula status geral
+  const vals = Object.values(respostas);
+  let statusGeral = 'ok';
+  if (vals.includes('critico'))       statusGeral = 'critico';
+  else if (vals.includes('atencao'))  statusGeral = 'atencao';
+
+  const hoje = new Date().toISOString().slice(0, 10);
+
+  // Payload alinhado ao schema exato da tabela checklists:
+  // caminhao_id, placa, motorista, km_atual, freios, pneus, luzes,
+  // oleo, agua, documentos, observacoes, status_geral, data_checklist, created_at
+  const payload = {
+    caminhao_id:    caminhao.id,
+    placa:          caminhao.placa || PLACA,
+    motorista:      motorista,
+    km_atual:       kmVal,
+    freios:         respostas['freios']     || 'nao_avaliado',
+    pneus:          respostas['pneus']      || 'nao_avaliado',
+    luzes:          respostas['luzes']      || 'nao_avaliado',
+    oleo:           respostas['oleo']       || 'nao_avaliado',
+    agua:           respostas['agua']       || 'nao_avaliado',
+    documentos:     respostas['documentos'] || 'nao_avaliado',
+    espelhos:       respostas['espelhos']   || 'nao_avaliado',
+    vazamentos:     respostas['vazamentos'] || 'nao_avaliado',
+    motor:          respostas['motor']      || 'nao_avaliado',
+    carroceria:     respostas['carroceria'] || 'nao_avaliado',
+    observacoes:    obs,
+    status_geral:   statusGeral,
+    data_checklist: hoje,
+    created_at:     hoje,
+  };
+
+  console.log('[submit] payload →', JSON.stringify(payload));
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Enviando…';
+
+  try {
+    // 1. Salvar checklist
+    const saved = await api.post('checklists', payload);
+    console.log('[submit] checklist salvo:', saved?.id);
+
+    // 2. Atualizar KM no caminhão (PATCH parcial)
+    try {
+      await api.patch('caminhoes', caminhao.id, { km_atual: kmVal });
+      console.log('[submit] KM atualizado para', kmVal);
+    } catch(e) {
+      console.warn('[submit] Aviso: não foi possível atualizar KM:', e.message);
+    }
+
+    // Tela de sucesso
+    const emojis = { ok: '✅', atencao: '⚠️', critico: '🔴' };
+    document.getElementById('success-detail').innerHTML = `
+      <div style="display:grid;gap:8px">
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:.8rem;color:#64748b">Veículo</span>
+          <strong>${caminhao.placa}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:.8rem;color:#64748b">Motorista</span>
+          <strong>${motorista}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:.8rem;color:#64748b">KM Registrado</span>
+          <strong>${Number(kmVal).toLocaleString('pt-BR')} km</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:.8rem;color:#64748b">Status Geral</span>
+          <strong>${emojis[statusGeral]||'✅'} ${statusGeral}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:.8rem;color:#64748b">Itens Avaliados</span>
+          <strong>${respondidos} / ${totalItens}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-size:.8rem;color:#64748b">Data</span>
+          <strong>${new Date().toLocaleDateString('pt-BR')}</strong>
+        </div>
+      </div>
+    `;
+    show('success-view');
+
+  } catch(err) {
+    console.error('[submit] ERRO:', err.message);
+    btn.disabled = false;
+    btn.innerHTML = '✅ Finalizar Vistoria';
+    alert('❌ Erro ao enviar: ' + err.message + '\n\nVerifique sua conexão e tente novamente.');
+  }
+}
+
+// ─── Boot ─────────────────────────────
+init();
+</script>
+</body>
+</html>
